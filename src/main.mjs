@@ -26,9 +26,11 @@ const tabs = new Map();
 let order = [];
 let active = null;
 let nextId = 1;
-let bounds = { left: 6, top: 44, right: 6, bottom: 66 }; // where the page card sits; the UI draws around it
+let bounds = { left: 8, top: 48, right: 8, bottom: 84 }; // where the page card sits; the UI draws around it
 let fullscreen = false;
 let extensions = null; // Chrome extension APIs for tabs (set up in setupSession)
+let dock = null; // the floating island: its own transparent view above the page
+let dockSize = { width: 420, height: 84 };
 let frozen = false; // page swapped for a screenshot while a dropdown covers it
 
 // ---------- storage ----------
@@ -244,7 +246,12 @@ function state() {
 let sendTimer;
 function sendState() {
   clearTimeout(sendTimer);
-  sendTimer = setTimeout(() => win && !win.isDestroyed() && win.webContents.send('state', state()), 16);
+  sendTimer = setTimeout(() => {
+    if (!win || win.isDestroyed()) return;
+    const s = state();
+    win.webContents.send('state', s);
+    dock?.webContents.send('state', s);
+  }, 16);
 }
 
 function layout() {
@@ -256,6 +263,11 @@ function layout() {
     if (!show) continue;
     t.view.setBounds(fullscreen ? { x: 0, y: 0, width: w, height: h } : { x: bounds.left, y: bounds.top, width: Math.max(0, w - bounds.left - bounds.right), height: Math.max(0, h - bounds.top - bounds.bottom) });
     t.view.setBorderRadius?.(fullscreen ? 0 : 12);
+  }
+  if (dock) {
+    const dw = Math.min(dockSize.width, w - 16);
+    dock.setVisible(!fullscreen && !frozen);
+    dock.setBounds({ x: Math.round((w - dw) / 2), y: h - dockSize.height, width: dw, height: dockSize.height });
   }
 }
 
@@ -270,6 +282,7 @@ function createTab(url = '', { activate = true } = {}) {
   const at = active ? order.indexOf(active) + 1 : order.length;
   order.splice(at, 0, id);
   win.contentView.addChildView(view);
+  if (dock) win.contentView.addChildView(dock); // re-adding keeps the island on top of the new page
   extensions?.addTab(view.webContents, win);
   const wc = view.webContents;
 
@@ -548,7 +561,10 @@ async function setupSession() {
     const d = { id: crypto.randomUUID(), name: path.basename(file), file, url: item.getURL(), total: item.getTotalBytes(), received: 0, state: 'progressing', at: Date.now() };
     store.downloads.unshift(d);
     store.downloads.length = Math.min(store.downloads.length, 100);
-    const push = () => win.webContents.send('downloads', store.downloads);
+    const push = () => {
+      win.webContents.send('downloads', store.downloads);
+      dock?.webContents.send('downloads', store.downloads);
+    };
     downloadItems.set(d.id, item);
     item.on('updated', (_ev, s) => {
       d.received = item.getReceivedBytes();
@@ -605,6 +621,14 @@ function createWindow() {
   // the browser's own page never navigates anywhere else
   win.webContents.on('will-navigate', (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  dock = new WebContentsView({ webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: false } });
+  dock.setBackgroundColor('#00000000');
+  win.contentView.addChildView(dock);
+  dock.webContents.loadURL('weber://app/dock.html');
+  dock.webContents.on('will-navigate', (e) => e.preventDefault());
+  dock.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  dock.webContents.on('before-input-event', (e, input) => shortcut(input) && e.preventDefault());
+  layout();
   win.webContents.once('did-finish-load', () => {
     createTab(launchTarget(process.argv.slice(app.isPackaged ? 1 : 2)) ?? '');
   });
@@ -613,7 +637,7 @@ function createWindow() {
 // ---------- IPC from the browser UI ----------
 
 function registerIpc() {
-  const fromUi = (e) => e.sender === win?.webContents;
+  const fromUi = (e) => e.sender === win?.webContents || e.sender === dock?.webContents;
   const on = (name, fn) => ipcMain.handle(name, (e, ...a) => (fromUi(e) ? fn(...a) : null));
   const cur = () => tabs.get(active);
 
@@ -624,6 +648,13 @@ function registerIpc() {
     bounds = { left: n(b.left), top: n(b.top), right: n(b.right), bottom: n(b.bottom) };
     layout();
   });
+  // the island sizes itself, opens panels in the main UI, and lights up the open panel's button
+  on('dock-size', (s) => {
+    dockSize = { width: Math.max(80, Math.min(4000, Number(s?.width) || 420)), height: Math.max(40, Math.min(160, Number(s?.height) || 84)) };
+    layout();
+  });
+  on('ui-command', (cmd) => void (typeof cmd === 'string' && /^panel:(bookmarks|history|downloads|settings)$/.test(cmd) && win.webContents.send('command', cmd)));
+  on('panel-state', (p) => void dock?.webContents.send('panel', typeof p === 'string' ? p : ''));
   on('new-tab', (url) => void createTab(typeof url === 'string' ? url : ''));
   on('close-tab', (id) => void closeTab(id));
   on('activate', (id) => activateTab(id));

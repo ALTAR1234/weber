@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' https: http: data: crx:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Weber island</title>
+  <link rel="stylesheet" href="dock.css" />
+</head>
+<body>
+  <div id="dock">
+    <div id="tabs"></div>
+    <button id="new-tab" class="dock-btn" title="New tab (Ctrl+T)"></button>
+    <span class="sep"></span>
+    <button id="bm-btn" class="dock-btn" title="Favorites"></button>
+    <button id="hist-btn" class="dock-btn" title="History (Ctrl+H)"></button>
+    <button id="dl-btn" class="dock-btn" title="Downloads (Ctrl+J)"><i id="dl-dot" hidden></i></button>
+    <button id="set-btn" class="dock-btn" title="Settings"></button>
+  </div>
+  <script type="module" src="dock.js"></script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+/* Weber's island: floating liquid glass. Its view is transparent; only the dock draws. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+body { display: flex; align-items: flex-end; justify-content: center; padding: 0 24px 11px; font: 600 13px 'Segoe UI', system-ui, sans-serif; color: #fff; user-select: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: default; }
+svg { display: block; flex: none; }
+[hidden] { display: none !important; }
+
+#dock {
+  position: relative; display: flex; align-items: center; gap: 6px; height: 62px; padding: 0 9px; max-width: 100%; border-radius: 24px;
+  /* the page underneath is a separate layer, so the glass is tinted rather than blurred: dark enough to read over anything */
+  background: linear-gradient(180deg, rgb(78 80 92 / .66), rgb(34 35 43 / .74) 55%, rgb(44 45 55 / .76));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .4), inset 0 -1px 0 rgb(255 255 255 / .08), inset 0 0 0 1px rgb(255 255 255 / .1), 0 1px 2px rgb(0 0 0 / .3), 0 10px 22px rgb(0 0 0 / .35);
+}
+/* bright rim, strongest along the top edge */
+#dock::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(180deg, rgb(255 255 255 / .6), rgb(255 255 255 / .14) 40%, rgb(255 255 255 / .05) 70%, rgb(255 255 255 / .25));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+/* sheen across the upper half, like light on curved glass */
+#dock::after { content: ''; position: absolute; left: 10px; right: 10px; top: 2px; height: 46%; border-radius: 20px 20px 50% 50% / 20px 20px 14px 14px; pointer-events: none; background: linear-gradient(180deg, rgb(255 255 255 / .16), transparent); }
+
+#tabs { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; min-width: 0; overflow: auto hidden; scrollbar-width: none; padding: 12px 2px; margin: -12px 0; }
+#tabs::-webkit-scrollbar { display: none; }
+.tab, .dock-btn {
+  position: relative; z-index: 1; flex: none; width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: rgb(255 255 255 / .85);
+  transition: transform .22s cubic-bezier(.2, .9, .3, 1.35), background .15s;
+}
+.tab { background: rgb(255 255 255 / .09); box-shadow: inset 0 1px 0 rgb(255 255 255 / .16), inset 0 0 0 1px rgb(255 255 255 / .05); }
+.tab:hover, .dock-btn:hover { transform: translateY(-4px) scale(1.12); background: rgb(255 255 255 / .16); color: #fff; }
+.tab:active, .dock-btn:active { transform: translateY(-2px) scale(1.04); }
+.tab .fav { width: 24px; height: 24px; display: grid; place-items: center; }
+.tab .fav img { width: 24px; height: 24px; border-radius: 6px; }
+.letter { font-size: 16px; font-weight: 800; }
+.tab.on { background: rgb(255 255 255 / .24); color: #fff; box-shadow: inset 0 1px 0 rgb(255 255 255 / .34), inset 0 0 0 1px rgb(255 255 255 / .14), 0 6px 16px rgb(0 0 0 / .25); }
+/* the light under the open tab */
+.tab.on::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px rgb(255 255 255 / .9); }
+.tab .x { position: absolute; z-index: 2; right: -5px; top: -5px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: rgb(40 40 46 / .96); color: #fff; box-shadow: 0 0 0 1px rgb(255 255 255 / .22); opacity: 0; transform: scale(.6); transition: opacity .12s, transform .12s; }
+.tab:hover .x { opacity: 1; transform: scale(1); }
+.tab .audio { position: absolute; z-index: 2; left: -4px; top: -4px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; background: #a9bcff; color: #0b0c10; }
+.tab.dragging { opacity: .4; }
+.spin { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgb(255 255 255 / .25); border-top-color: #fff; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.dock-btn { color: rgb(255 255 255 / .78); }
+.dock-btn.on { background: rgb(255 255 255 / .18); color: #fff; box-shadow: inset 0 1px 0 rgb(255 255 255 / .26); }
+#new-tab { background: rgb(255 255 255 / .07); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .12); }
+.sep { position: relative; z-index: 1; width: 1px; height: 34px; margin: 0 3px; flex: none; background: linear-gradient(180deg, transparent, rgb(255 255 255 / .3), transparent); }
+#dl-dot { position: absolute; right: 9px; top: 9px; width: 7px; height: 7px; border-radius: 50%; background: #a9bcff; }
+
+/* softer glass: no outlines on the tiles, just fills; one faint highlight along the island's top edge */
+#dock { box-shadow: inset 0 1px 0 rgb(255 255 255 / .22), 0 10px 24px rgb(0 0 0 / .38); }
+#dock::before { background: linear-gradient(180deg, rgb(255 255 255 / .28), rgb(255 255 255 / .04) 35%, transparent 70%); }
+#dock::after { background: linear-gradient(180deg, rgb(255 255 255 / .08), transparent); }
+.tab, #new-tab { background: rgb(255 255 255 / .08); box-shadow: none; }
+.tab:hover, .dock-btn:hover { background: rgb(255 255 255 / .14); }
+.tab.on { background: rgb(255 255 255 / .2); box-shadow: 0 4px 12px rgb(0 0 0 / .2); }
+.dock-btn.on { box-shadow: none; }
+.tab .x { background: rgb(30 30 36 / .92); box-shadow: none; }
+.sep { background: rgb(255 255 255 / .14); height: 28px; }
+/* room around the tab strip so the close button (which sits on the tile's corner) isn't clipped by the scroll edge */
+#tabs { padding: 12px 8px; margin: -12px -6px; }
+.tab .x { right: -4px; top: -4px; }

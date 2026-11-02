@@ -33,6 +33,7 @@ const ICONS = {
   image: '<rect x="4" y="5" width="16" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M20 16l-5-5-8 8"/>',
   play: '<rect x="4" y="5" width="16" height="14" rx="3"/><path d="M10.5 9.5v5l4-2.5z"/>',
   news: '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M8 9h8M8 12.5h8M8 16h5"/>',
+  spark: '<path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6L4.5 11l5.6-1.9z"/>',
   pin: '<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>',
 };
 const icon = (n, s = 18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
@@ -95,6 +96,7 @@ $('#zoom-pill').onclick = () => A.zoom(0);
 // ---------- layout: tell main where the page sits ----------
 function syncLayout() {
   document.body.classList.toggle('panel', !!panel);
+  A.panelState(panel || '');
   for (const [id, p] of [['bm-btn', 'bookmarks'], ['hist-btn', 'history'], ['dl-btn', 'downloads'], ['set-btn', 'settings']]) $('#' + id).classList.toggle('on', panel === p);
   const r = $('#stage').getBoundingClientRect();
   A.layout({ left: r.left, top: r.top, right: innerWidth - r.right, bottom: innerHeight - r.bottom });
@@ -110,7 +112,7 @@ function renderTabs() {
       el.className = 'tab' + (t.id === S.active ? ' on' : '');
       el.title = (t.url ? t.title : 'New tab') + (t.url ? '\n' + host(t.url) : '');
       el.draggable = true;
-      const fav = t.loading ? '<span class="spin"></span>' : t.favicon ? `<img src="${esc(t.favicon)}" alt="" data-fb="">` : icon(t.url ? 'globe' : 'plus', 17);
+      const fav = t.loading ? '<span class="spin"></span>' : t.favicon ? `<img src="${esc(t.favicon)}" alt="" data-fb="">` : icon(t.url ? 'globe' : 'spark', 16);
       el.innerHTML = `<span class="fav">${fav}</span><span class="title">${esc(t.url ? t.title : 'New tab')}</span>${t.audible || t.muted ? `<button class="audio" title="${t.muted ? 'Unmute' : 'Mute'} tab">${icon(t.muted ? 'mute' : 'sound', t.id === S.active ? 15 : 10)}</button>` : ''}<button class="x" title="Close (Ctrl+W)">${icon('x', 14)}</button>`;
       el.onmousedown = (e) => {
         if (e.button === 1) e.preventDefault();
@@ -132,7 +134,7 @@ function renderTabs() {
       return el;
     }),
   );
-  box.querySelector('.tab.on')?.scrollIntoView({ inline: 'nearest' });
+  box.querySelector('.tab.on')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
 // ---------- top strip ----------
@@ -335,47 +337,48 @@ async function renderStage(force) {
   const wKind = (code, day = true) => (code === 0 ? (day ? 'sun' : 'moon') : code <= 3 ? 'cloudsun' : code >= 95 ? 'storm' : code >= 51 ? 'rain' : 'cloud');
   const days = (w?.days ?? []).slice(1, 5);
 
-  stage.innerHTML = `<div class="ntp2">
-      <nav class="rail" aria-label="Favorites">
-        ${apps.map((s) => { const b = brand(s.url); return `<button class="fav-dot${b.mono ? ' mono' : ''}" style="--c:${b.color}" data-url="${esc(s.url)}" title="${esc(label(s))}">${favImg(s.url, s.favicon, label(s)[0])}</button>`; }).join('')}
-        <button class="fav-dot add" id="rail-add" title="Favorites">${icon('plus', 18)}</button>
+  const hour = now.getHours();
+  const greet = hour < 5 ? 'Good night' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const dayName = (d) => new Date(d + 'T12:00').toLocaleDateString([], { weekday: 'short' });
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace(/_/g, ' ');
+  stage.innerHTML = `<div class="ntp3">
+      <header class="n-head when">
+        <span class="dial">${clockSvg(now)}</span>
+        <div><h1>${greet}</h1><p><b id="ntp-date">${now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</b><span id="ntp-time">${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · ${zone}</span></p></div>
+      </header>
+      <form class="n-search" id="ntp-form">
+        <span class="n-s-ico">${icon('search', 20)}</span>
+        <input class="search" id="ntp-search" placeholder="Search the web or type an address" spellcheck="false" autocomplete="off" />
+        <button type="button" class="engine" id="engine" title="Change search engine"><i class="e-dot e-${esc(store.settings.engine ?? 'bing')}"></i>${ENGINE_NAMES[store.settings.engine] ?? 'Bing'}</button>
+        <span class="n-s-sep"></span>
+        ${SCOPES.slice(1, 4).map(([k, l, ic]) => `<button type="button" class="scope${k === scope ? ' on' : ''}" data-scope="${k}" title="${l}">${icon(ic, 16)}</button>`).join('')}
+        <button type="submit" class="go" title="Search">${icon('arrow', 17)}</button>
+      </form>
+      <nav class="n-favs" aria-label="Favorites">
+        ${apps.map((s) => { const b = brand(s.url); return `<button class="n-fav${b.mono ? ' mono' : ''}" style="--c:${b.color}" data-url="${esc(s.url)}" title="${esc(s.url)}"><span class="n-fav-ico">${favImg(s.url, s.favicon, label(s)[0])}</span><span class="n-fav-lbl">${esc(label(s))}</span></button>`; }).join('')}
+        <button class="n-fav add" id="rail-add" title="Manage favorites"><span class="n-fav-ico">${icon('plus', 20)}</span><span class="n-fav-lbl">Add</span></button>
       </nav>
-      <div class="grid3">
-        ${story(movies, 'g-mv')}
-        <button class="w pill weather g-wx" id="w-weather" title="Weather for ${esc(w?.city ?? 'your city')} (change the city in Settings)">
-          <span class="pill-ico">${wicon(w ? wKind(w.code, w.day) : 'cloud')}</span>
-          <span><b>${w ? esc(w.text) : 'Weather'}</b><small>${w ? `${w.temp}°F · ${esc(w.city)} · H ${w.high}° L ${w.low}°` : 'Unavailable right now'}</small></span>
+      <section class="n-widgets">
+        <button class="w n-wx" id="w-weather" title="Weather for ${esc(w?.city ?? 'your city')} (change the city in Settings)">
+          <span class="wx-now"><span class="pill-ico">${wicon(w ? wKind(w.code, w.day) : 'cloud')}</span><span><b>${w ? `${w.temp}° · ${esc(w.text)}` : 'Weather'}</b><small>${w ? `${esc(w.city)} · H ${w.high}° L ${w.low}°` : 'Unavailable right now'}</small></span></span>
+          ${days.length ? `<span class="wx-days">${days.map((d) => `<span><small>${dayName(d.day)}</small>${wicon(wKind(d.code))}<b>${d.high}°</b></span>`).join('')}</span>` : ''}
         </button>
-        ${story(games, 'g-gm')}
-        <div class="w pill when g-dt">
-          <span class="dial">${clockSvg(now)}</span>
-          <span><b id="ntp-date">${now.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'short' })}</b><small id="ntp-time">${now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · ${Intl.DateTimeFormat().resolvedOptions().timeZone.split('/').pop().replace(/_/g, ' ')}</small></span>
-        </div>
-        <form class="sq g-b2" id="ntp-form">
-          <svg class="sq-shape" viewBox="0 0 300 300" aria-hidden="true"><defs>
-            <radialGradient id="sqf" cx="50%" cy="0%" r="110%"><stop offset="0" stop-color="#7a46ff" stop-opacity=".75"/><stop offset=".55" stop-color="#4a22aa" stop-opacity=".55"/><stop offset="1" stop-color="#1c1634" stop-opacity=".92"/></radialGradient>
-            <linearGradient id="sqs" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c6a8ff"/><stop offset=".45" stop-color="#7b5cff"/><stop offset="1" stop-color="#ff4fb8"/></linearGradient>
-          </defs><path d="${SQUIRCLE}" fill="url(#sqf)" stroke="url(#sqs)" stroke-width="2"/></svg>
-          <span class="hero-mark">${icon('search', 26)}</span>
-          <b class="hero-title">Search the web</b>
-          <input class="search" id="ntp-search" placeholder="Type or paste anything" spellcheck="false" autocomplete="off" />
-          <div class="hero-row">
-            <button type="button" class="engine" id="engine" title="Change search engine"><i class="e-dot e-${esc(store.settings.engine ?? 'bing')}"></i>${ENGINE_NAMES[store.settings.engine] ?? 'Bing'}</button>
-            ${SCOPES.slice(1, 4).map(([k, l, ic]) => `<button type="button" class="scope${k === scope ? ' on' : ''}" data-scope="${k}" title="${l}">${icon(ic, 15)}</button>`).join('')}
-            <button type="submit" class="go" title="Search">${icon('arrow', 17)}</button>
-          </div>
-        </form>
-        <div class="w chart g-ch" title="US dollar to ${esc(rate?.to ?? 'EUR')}, last month">
+        <div class="w chart" title="US dollar to ${esc(rate?.to ?? 'EUR')}, last month">
           <div class="chart-top"><b>USD to ${esc(rate?.to ?? 'EUR')}</b><span class="${change && change < 0 ? 'down' : 'up'}">${change !== null ? (change > 0 ? '+' : '') + change + '%' : ''}</span></div>
           <div class="chart-val">${rate?.latest ? rate.latest.toFixed(4) : '—'}</div>
-          <small>Last 30 days</small>
           ${spark}
         </div>
-        ${story(science, 'g-sc')}
-        ${center}
-      </div>
-      <button class="latest" id="latest">Latest &amp; hot ${icon('down', 15)}</button>
-      <section class="more" id="more">${stories.filter((n) => !used.has(n.url)).slice(0, 16).map((n) => story(n, '')).join('')}</section>
+      </section>
+      <h2 class="n-h">Today</h2>
+      <section class="n-stories">
+        ${center.replace('g-c3', 'feat')}
+        ${story(movies, '')}
+        ${story(games, '')}
+        ${story(science, '')}
+        ${story(take('Tech') ?? take('Movies'), '')}
+      </section>
+      <button class="latest" id="latest">More stories ${icon('down', 15)}</button>
+      <section class="more" id="more">${stories.filter((n) => !used.has(n.url)).slice(0, 15).map((n) => story(n, '')).join('')}</section>
     </div>`;
 
   $('#engine').onclick = () => {
@@ -436,7 +439,7 @@ function clockSvg(d) {
   const h = (d.getHours() % 12) * 30 + d.getMinutes() / 2, m = d.getMinutes() * 6;
   const hand = (deg, len, w) => `<line x1="20" y1="20" x2="${20 + len * Math.sin((deg * Math.PI) / 180)}" y2="${20 - len * Math.cos((deg * Math.PI) / 180)}" stroke="currentColor" stroke-width="${w}" stroke-linecap="round"/>`;
   const ticks = [0, 90, 180, 270].map((a) => `<circle cx="${20 + 15.5 * Math.sin((a * Math.PI) / 180)}" cy="${20 - 15.5 * Math.cos((a * Math.PI) / 180)}" r="1.2" fill="currentColor" opacity=".6"/>`).join('');
-  return `<svg viewBox="0 0 40 40" width="40" height="40">${ticks}${hand(h, 8.5, 2.6)}${hand(m, 13, 1.8)}<circle cx="20" cy="20" r="2" fill="#ff4fb8"/></svg>`;
+  return `<svg viewBox="0 0 40 40" width="100%" height="100%">${ticks}${hand(h, 8.5, 2.6)}${hand(m, 13, 1.8)}<circle cx="20" cy="20" r="2" fill="#ff4fb8"/></svg>`;
 }
 function wicon(kind) {
   const p = {
@@ -773,9 +776,12 @@ A.onCommand((cmd) => {
   } else if (cmd === 'find') openFind();
   else if (cmd === 'bookmark') toggleBookmark();
   else if (cmd === 'panel:history') togglePanel('history');
+  else if (cmd === 'panel:bookmarks') togglePanel('bookmarks');
+  else if (cmd === 'panel:settings') togglePanel('settings');
   else if (cmd === 'panel:downloads') togglePanel('downloads');
   else if (cmd === 'download-started') {
     if (panel !== 'downloads') $('#dl-dot').hidden = false;
+    A.panelState(panel || ''); // the island shows its own download dot
     toast('Download started');
   }
 });
