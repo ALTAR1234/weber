@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' https: http: data: crx:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Weber</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-theme="aurora">
+  <div id="wall" aria-hidden="true"></div>
+
+  <header id="top">
+    <div class="nav">
+      <button id="back" class="icon" title="Back (Alt+Left)"></button>
+      <button id="forward" class="icon" title="Forward (Alt+Right)"></button>
+      <button id="reload" class="icon" title="Reload (Ctrl+R)"></button>
+    </div>
+    <div id="center">
+      <button id="pill" title="Search or enter address (Ctrl+L)"><span id="site-icon"></span><span id="url-text"></span></button>
+      <div id="findbar" hidden>
+        <input id="find-input" spellcheck="false" placeholder="Find in page" />
+        <span id="find-count"></span>
+        <button id="find-prev" class="icon small" title="Previous (Shift+Enter)"></button>
+        <button id="find-next" class="icon small" title="Next (Enter)"></button>
+        <button id="find-close" class="icon small" title="Close (Esc)"></button>
+      </div>
+      <div id="permbar" hidden></div>
+    </div>
+    <div class="tools">
+      <browser-action-list id="ext-actions" partition="persist:weber" alignment="bottom left"></browser-action-list>
+      <span id="zoom-pill" hidden></span>
+      <button id="star" class="icon" title="Add to favorites (Ctrl+D)"></button>
+      <button id="shield" class="icon" title="Ads and trackers blocked"><b id="blocked"></b></button>
+    </div>
+  </header>
+
+  <main id="stage"></main>
+  <aside id="panel" hidden></aside>
+
+  <footer id="dockbar">
+    <div id="dock">
+      <div id="tabs"></div>
+      <button id="new-tab" class="dock-btn" title="New tab (Ctrl+T)"></button>
+      <span class="sep"></span>
+      <button id="bm-btn" class="dock-btn" title="Favorites"></button>
+      <button id="hist-btn" class="dock-btn" title="History (Ctrl+H)"></button>
+      <button id="dl-btn" class="dock-btn" title="Downloads (Ctrl+J)"><i id="dl-dot" hidden></i></button>
+      <button id="set-btn" class="dock-btn" title="Settings"></button>
+    </div>
+  </footer>
+
+  <div id="cmd" hidden>
+    <div class="cmd-box">
+      <div class="cmd-row"><span class="cmd-icon"></span><input id="address" spellcheck="false" autocomplete="off" placeholder="Search or enter address" /></div>
+      <div id="suggest"></div>
+    </div>
+  </div>
+  <div id="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

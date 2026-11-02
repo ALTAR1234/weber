@@ -1,0 +1,47 @@
+{
+  "name": "weber-browser",
+  "productName": "Weber",
+  "version": "1.0.0",
+  "description": "A clean glass web browser that J.A.R.V.I.S. can drive",
+  "main": "src/main.mjs",
+  "scripts": {
+    "start": "electron ."
+  },
+  "type": "module",
+  "devDependencies": {
+    "electron": "^45.2.1"
+  },
+  "private": true,
+  "dependencies": {
+    "electron-chrome-extensions": "^4.10.0",
+    "electron-chrome-web-store": "^0.13.0"
+  },
+  "author": "Arjun",
+  "build": {
+    "appId": "com.weber.browser",
+    "productName": "Weber",
+    "executableName": "Weber",
+    "files": [
+      "src/**/*",
+      "build/icon.ico",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "include": "build/installer.nsh",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Weber",
+      "runAfterFinish": false,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
