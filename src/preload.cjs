@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('weber', {
   history: call('history'),
   historyClear: call('history-clear'),
   suggest: call('suggest'),
+  queries: call('queries'),
   topSites: call('top-sites'),
   recent: call('recent'),
   ntpData: call('ntp-data'),

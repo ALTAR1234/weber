@@ -66,6 +66,25 @@ const ENGINES = {
   duckduckgo: 'https://duckduckgo.com/?q=',
   brave: 'https://search.brave.com/search?q=',
 };
+// What people search for that starts like this, from the chosen engine's suggestion service.
+const SUGGEST = {
+  google: (v) => `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(v)}`,
+  bing: (v) => `https://api.bing.com/osjson.aspx?query=${encodeURIComponent(v)}`,
+  duckduckgo: (v) => `https://duckduckgo.com/ac/?type=list&q=${encodeURIComponent(v)}`,
+  // Brave has no public suggestion service that answers apps, so Brave uses DuckDuckGo (also private) for these
+  brave: (v) => `https://duckduckgo.com/ac/?type=list&q=${encodeURIComponent(v)}`,
+};
+async function searchQueries(text) {
+  const v = String(text ?? '').trim().slice(0, 200);
+  if (!v || /^https?:\/\//i.test(v)) return [];
+  try {
+    const r = await fetch((SUGGEST[store.settings.engine] ?? SUGGEST.bing)(v), { signal: AbortSignal.timeout(2500) });
+    const list = (await r.json())?.[1];
+    return Array.isArray(list) ? list.filter((x) => typeof x === 'string' && x.toLowerCase() !== v.toLowerCase()).slice(0, 6) : [];
+  } catch {
+    return [];
+  }
+}
 function resolveInput(text) {
   const s = String(text ?? '').trim();
   if (!s) return '';
@@ -712,6 +731,7 @@ function registerIpc() {
     save();
     session.fromPartition(PARTITION).clearCache();
   });
+  on('queries', (q) => searchQueries(q));
   on('suggest', (q) => {
     const s = String(q ?? '').toLowerCase();
     if (!s) return [];

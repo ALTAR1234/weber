@@ -162,6 +162,20 @@ body.fullscreen #stage { inset: 0; border-radius: 0; box-shadow: none; }
 .sg .t { color: var(--text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
 .sg .u { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; font-size: 12.5px; }
 .sg.on { background: var(--fill-2); }
+#suggest { overflow: hidden; }
+.sg.drop { animation: sg-drop .28s cubic-bezier(.2, .9, .3, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes sg-drop { from { opacity: 0; transform: translateY(-10px); } }
+@media (prefers-reduced-motion: reduce) { .sg.drop { animation: none; } }
+/* sound wave on playing tabs */
+.tab .audio .wave { display: flex; align-items: center; gap: 1.5px; height: 10px; }
+.tab .audio .wave i { width: 2px; height: 100%; border-radius: 1px; background: currentColor; transform-origin: center; animation: wave 1s ease-in-out infinite; }
+.tab .audio .wave i:nth-child(1) { animation-duration: .9s; animation-delay: -.3s; }
+.tab .audio .wave i:nth-child(2) { animation-duration: 1.15s; animation-delay: -.6s; }
+.tab .audio .wave i:nth-child(3) { animation-duration: .8s; animation-delay: -.1s; }
+.tab .audio .wave i:nth-child(4) { animation-duration: 1.05s; animation-delay: -.45s; }
+@keyframes wave { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .tab .audio .wave i { animation: none; transform: scaleY(.6); } }
+
 
 #toast { position: fixed; z-index: 6; top: 8px; left: calc(50% - 75px); transform: translateX(-50%); height: 32px; display: flex; align-items: center; padding: 0 16px; border-radius: 10px; background: #f3f4f7; color: #111; font-weight: 650; box-shadow: 0 8px 24px rgb(0 0 0 / .3); animation: drop .2s ease-out; }
 @keyframes drop { from { transform: translate(-50%, -8px); opacity: 0; } }

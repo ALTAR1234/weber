@@ -44,7 +44,7 @@ function render() {
       el.draggable = true;
       const letter = esc((host(t.url)[0] || '').toUpperCase());
       const fav = t.loading ? '<span class="spin"></span>' : t.favicon ? `<img src="${esc(t.favicon)}" alt="" data-fb="${letter}">` : icon(t.url ? 'globe' : 'spark', 20);
-      el.innerHTML = `<span class="fav">${fav}</span>${t.audible || t.muted ? `<button class="audio" title="${t.muted ? 'Unmute' : 'Mute'} tab">${icon(t.muted ? 'mute' : 'sound', 11)}</button>` : ''}<button class="x" title="Close (Ctrl+W)">${icon('x', 11)}</button>`;
+      el.innerHTML = `<span class="fav">${fav}</span>${t.audible || t.muted ? `<button class="audio" title="${t.muted ? 'Unmute' : 'Mute'} tab">${t.muted ? icon('mute', 11) : '<span class="wave"><i></i><i></i><i></i><i></i></span>'}</button>` : ''}<button class="x" title="Close (Ctrl+W)">${icon('x', 11)}</button>`;
       el.onmousedown = (e) => {
         if (e.button === 1) e.preventDefault();
         else if (e.button === 0 && !e.target.closest('button')) A.activate(t.id);

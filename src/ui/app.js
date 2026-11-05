@@ -113,7 +113,7 @@ function renderTabs() {
       el.title = (t.url ? t.title : 'New tab') + (t.url ? '\n' + host(t.url) : '');
       el.draggable = true;
       const fav = t.loading ? '<span class="spin"></span>' : t.favicon ? `<img src="${esc(t.favicon)}" alt="" data-fb="">` : icon(t.url ? 'globe' : 'spark', 16);
-      el.innerHTML = `<span class="fav">${fav}</span><span class="title">${esc(t.url ? t.title : 'New tab')}</span>${t.audible || t.muted ? `<button class="audio" title="${t.muted ? 'Unmute' : 'Mute'} tab">${icon(t.muted ? 'mute' : 'sound', t.id === S.active ? 15 : 10)}</button>` : ''}<button class="x" title="Close (Ctrl+W)">${icon('x', 14)}</button>`;
+      el.innerHTML = `<span class="fav">${fav}</span><span class="title">${esc(t.url ? t.title : 'New tab')}</span>${t.audible || t.muted ? `<button class="audio" title="${t.muted ? 'Unmute' : 'Mute'} tab">${t.muted ? icon('mute', t.id === S.active ? 15 : 10) : WAVE}</button>` : ''}<button class="x" title="Close (Ctrl+W)">${icon('x', 14)}</button>`;
       el.onmousedown = (e) => {
         if (e.button === 1) e.preventDefault();
         else if (e.button === 0 && !e.target.closest('button')) A.activate(t.id);
@@ -171,6 +171,9 @@ async function toggleBookmark() {
   if (panel === 'bookmarks') renderPanel();
 }
 
+// Playing tabs show a moving sound wave in place of the speaker icon.
+const WAVE = '<span class="wave"><i></i><i></i><i></i><i></i></span>';
+
 // ---------- command bar: the address pill grows into it ----------
 // The page is swapped for a screenshot while it's open, so it can draw on top.
 const address = $('#address');
@@ -193,11 +196,19 @@ function closeCommand(focusPage = true) {
   if (focusPage) A.focusPage();
 }
 $('#cmd').onmousedown = (e) => e.target.id === 'cmd' && closeCommand();
+// History and bookmarks show at once; what people search for drops in underneath when the engine answers.
+let asked = 0;
 address.addEventListener('input', async () => {
-  const q = address.value;
+  const q = address.value, n = ++asked;
   const found = await A.suggest(q);
-  suggestions = q.trim() ? [{ search: q.trim() }, ...found] : [];
+  if (n !== asked) return;
+  suggestions = q.trim() ? [{ search: q.trim() }, ...found.slice(0, 3)] : [];
   pick = 0;
+  renderSuggest();
+  if (!q.trim()) return;
+  const queries = await A.queries(q);
+  if (n !== asked || !queries.length) return;
+  suggestions = [{ search: q.trim() }, ...queries.map((x) => ({ search: x, query: true })), ...found.slice(0, 3)];
   renderSuggest();
 });
 address.addEventListener('keydown', (e) => {
@@ -218,15 +229,23 @@ function go(target, newTab) {
   else A.navigate(target);
   A.focusPage();
 }
+// Rows that were already showing stay put; new ones drop in one after another, and the box eases to its new height.
 function renderSuggest() {
   const box = $('#suggest');
+  const before = new Set([...box.children].map((el) => el.dataset.k));
+  const from = box.getBoundingClientRect().height;
+  let fresh = 0;
   box.innerHTML = suggestions
-    .map((s, i) =>
-      s.search
-        ? `<div class="sg${i === pick ? ' on' : ''}" data-i="${i}">${icon('search', 16)}<span class="t">${esc(s.search)}</span><span class="u">Search the web</span></div>`
-        : `<div class="sg${i === pick ? ' on' : ''}" data-i="${i}">${icon(s.bookmark ? 'star' : 'globe', 16)}<span class="t">${esc(s.title)}</span><span class="u">${esc(s.url)}</span></div>`,
-    )
+    .map((s, i) => {
+      const k = s.search ? `s:${s.search.toLowerCase()}` : `u:${s.url}`;
+      const drop = before.has(k) ? '' : ` drop" style="--d:${fresh++ * 35}ms`;
+      return s.search
+        ? `<div class="sg${i === pick ? ' on' : ''}${drop}" data-i="${i}" data-k="${esc(k)}">${icon('search', 16)}<span class="t">${esc(s.search)}</span><span class="u">${s.query ? '' : 'Search the web'}</span></div>`
+        : `<div class="sg${i === pick ? ' on' : ''}${drop}" data-i="${i}" data-k="${esc(k)}">${icon(s.bookmark ? 'star' : 'globe', 16)}<span class="t">${esc(s.title)}</span><span class="u">${esc(s.url)}</span></div>`;
+    })
     .join('');
+  const to = box.getBoundingClientRect().height;
+  if (from !== to && !$('#cmd').hidden) box.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 220, easing: 'cubic-bezier(.2, .9, .3, 1)' });
   for (const el of box.children)
     el.onmousedown = (e) => {
       e.preventDefault();
