@@ -960,6 +960,8 @@ else {
   app.on('second-instance', (_e, argv) => {
     const url = launchTarget(argv.slice(1));
     if (url) createTab(url);
+    // J.A.R.V.I.S. may have started Weber hidden; opening it again should always bring the window up
+    if (!win.isVisible()) win.show();
     if (win.isMinimized()) win.restore();
     win.focus();
   });
