@@ -32,6 +32,10 @@ let extensions = null; // Chrome extension APIs for tabs (set up in setupSession
 let dock = null; // the floating island: its own transparent view above the page
 let dockSize = { width: 420, height: 84 };
 let frozen = false; // page swapped for a screenshot while a dropdown covers it
+// Split view: two tabs side by side. `active` is whichever side has focus; ratio is the left side's share.
+let split = null; // { left, right, ratio }
+let previous = null; // the tab that was active before this one, the default partner for a split
+const SPLIT_GAP = 14;
 
 // ---------- storage ----------
 
@@ -242,6 +246,8 @@ function state() {
   return {
     active,
     fullscreen,
+    split,
+    splitGap: SPLIT_GAP,
     tabs: order.map((id) => {
       const t = tabs.get(id);
       const wc = t.view.webContents;
@@ -276,11 +282,14 @@ function sendState() {
 function layout() {
   if (!win) return;
   const [w, h] = win.getContentSize();
+  const area = { x: bounds.left, y: bounds.top, width: Math.max(0, w - bounds.left - bounds.right), height: Math.max(0, h - bounds.top - bounds.bottom) };
+  const halves = split && !fullscreen ? splitRects(area) : null;
   for (const t of tabs.values()) {
-    const show = t.id === active && !!t.url && !t.error && !frozen;
+    const rect = halves ? (t.id === split.left ? halves[0] : t.id === split.right ? halves[1] : null) : t.id === active ? (fullscreen ? { x: 0, y: 0, width: w, height: h } : area) : null;
+    const show = !!rect && !!t.url && !t.error && !frozen;
     t.view.setVisible(show);
     if (!show) continue;
-    t.view.setBounds(fullscreen ? { x: 0, y: 0, width: w, height: h } : { x: bounds.left, y: bounds.top, width: Math.max(0, w - bounds.left - bounds.right), height: Math.max(0, h - bounds.top - bounds.bottom) });
+    t.view.setBounds(rect);
     t.view.setBorderRadius?.(fullscreen ? 0 : 12);
   }
   if (dock) {
@@ -290,6 +299,33 @@ function layout() {
   }
 }
 
+function splitRects(a) {
+  const lw = Math.round((a.width - SPLIT_GAP) * split.ratio);
+  return [{ x: a.x, y: a.y, width: lw, height: a.height }, { x: a.x + lw + SPLIT_GAP, y: a.y, width: a.width - lw - SPLIT_GAP, height: a.height }];
+}
+// Put the current tab next to another one (by default the tab you were on before, else a fresh search page).
+function splitWith(other) {
+  if (!active) return;
+  if (!tabs.has(other) || other === active) other = previous && previous !== active && tabs.has(previous) ? previous : null;
+  const keep = active;
+  if (!other) {
+    const home = new URL(ENGINES[store.settings.engine] ?? ENGINES.bing).origin;
+    other = createTab(home, { activate: false }).id;
+    active = keep; // the extensions layer selects every new tab; the current one stays on the left
+    extensions?.selectTab(tabs.get(keep).view.webContents);
+  }
+  if (fullscreen) setFullscreen(false);
+  split = { left: active, right: other, ratio: split?.ratio ?? 0.5 };
+  layout();
+  sendState();
+}
+function unsplit() {
+  if (!split) return;
+  split = null;
+  layout();
+  sendState();
+  tabs.get(active)?.view.webContents.focus();
+}
 function createTab(url = '', { activate = true } = {}) {
   const id = nextId++;
   const view = new WebContentsView({ webPreferences: { partition: PARTITION, sandbox: true, contextIsolation: true, nodeIntegration: false, spellcheck: true, plugins: true } }); // plugins: the built-in PDF viewer
@@ -364,6 +400,14 @@ function createTab(url = '', { activate = true } = {}) {
   wc.on('before-input-event', (e, input) => shortcut(input) && e.preventDefault());
   wc.on('context-menu', (_e, p) => contextMenu(t, p));
   wc.on('zoom-changed', (_e, dir) => zoom(t, dir === 'in' ? 0.1 : -0.1));
+  // in split view, clicking into a side makes it the active one (address bar, back, reload follow it)
+  wc.on('focus', () => {
+    if (!split || active === id || (id !== split.left && id !== split.right)) return;
+    previous = active;
+    active = id;
+    extensions?.selectTab(wc);
+    sendState();
+  });
 
   if (url) navigate(t, url);
   if (activate || !active) activateTab(id);
@@ -383,6 +427,12 @@ function navigate(t, input) {
 
 function activateTab(id) {
   if (!tabs.has(id)) return;
+  // in split view, picking a tab that isn't showing puts it on the side that has focus
+  if (split && id !== split.left && id !== split.right) {
+    if (active === split.right) split.right = id;
+    else split.left = id;
+  }
+  if (id !== active) previous = active;
   active = id;
   extensions?.selectTab(tabs.get(id).view.webContents);
   layout();
@@ -396,6 +446,12 @@ function closeTab(id) {
   const t = tabs.get(id);
   if (!t) return;
   const i = order.indexOf(id);
+  // closing one side of a split leaves the other side on its own
+  if (split && (id === split.left || id === split.right)) {
+    const keep = id === split.left ? split.right : split.left;
+    split = null;
+    if (active === id) active = keep;
+  }
   order = order.filter((x) => x !== id);
   tabs.delete(id);
   win.contentView.removeChildView(t.view);
@@ -437,6 +493,7 @@ function shortcut(input) {
   if (ctrl && k === 'h') return ui('panel:history'), true;
   if (ctrl && k === 'j') return ui('panel:downloads'), true;
   if (ctrl && input.shift && k === 'b') return ui('toggle-sidebar'), true;
+  if (ctrl && input.shift && k === 's') return split ? unsplit() : splitWith(), true;
   if (ctrl && k === 'tab') {
     const i = order.indexOf(active) + (input.shift ? -1 : 1);
     return activateTab(order[(i + order.length) % order.length]), true;
@@ -676,6 +733,33 @@ function registerIpc() {
   on('panel-state', (p) => void dock?.webContents.send('panel', typeof p === 'string' ? p : ''));
   on('new-tab', (url) => void createTab(typeof url === 'string' ? url : ''));
   on('close-tab', (id) => void closeTab(id));
+  on('split', (id) => void splitWith(Number(id) || null));
+  on('unsplit', () => void unsplit());
+  on('split-swap', () => {
+    if (!split) return;
+    split = { ...split, left: split.right, right: split.left, ratio: 1 - split.ratio };
+    layout();
+    sendState();
+  });
+  on('split-ratio', (r) => {
+    if (!split) return;
+    split.ratio = Math.min(0.8, Math.max(0.2, Number(r) || 0.5));
+    layout();
+    sendState();
+  });
+  // right-click a tab in the island
+  on('tab-menu', (id) => {
+    if (!tabs.has(id)) return;
+    const inSplit = split && (id === split.left || id === split.right);
+    const items = [
+      inSplit ? { label: 'Close split view', accelerator: 'Ctrl+Shift+S', click: () => unsplit() }
+        : id === active ? { label: 'Split view with another tab', accelerator: 'Ctrl+Shift+S', click: () => splitWith() }
+        : { label: 'Open in split view', click: () => splitWith(id) },
+      { type: 'separator' },
+      { label: 'Close tab', click: () => closeTab(id) },
+    ];
+    Menu.buildFromTemplate(items).popup({ window: win });
+  });
   on('activate', (id) => activateTab(id));
   on('move-tab', (id, to) => {
     order = order.filter((x) => x !== id);

@@ -71,3 +71,6 @@ svg { display: block; flex: none; }
 .tab .audio .wave i:nth-child(4) { animation-duration: 1.05s; animation-delay: -.45s; }
 @keyframes wave { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .tab .audio .wave i { animation: none; transform: scaleY(.6); } }
+
+/* tabs showing in split view */
+.tab.split::after { content: ''; position: absolute; left: 30%; right: 30%; bottom: -5px; height: 3px; border-radius: 2px; background: #a9bcff; }

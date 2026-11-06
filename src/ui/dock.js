@@ -39,7 +39,7 @@ function render() {
   box.replaceChildren(
     ...S.tabs.map((t, i) => {
       const el = document.createElement('div');
-      el.className = 'tab' + (t.id === S.active ? ' on' : '');
+      el.className = 'tab' + (t.id === S.active ? ' on' : '') + (S.split && (t.id === S.split.left || t.id === S.split.right) ? ' split' : '');
       el.title = t.url ? `${t.title}\n${host(t.url)}` : 'New tab';
       el.draggable = true;
       const letter = esc((host(t.url)[0] || '').toUpperCase());
@@ -50,6 +50,7 @@ function render() {
         else if (e.button === 0 && !e.target.closest('button')) A.activate(t.id);
       };
       el.onauxclick = (e) => e.button === 1 && A.closeTab(t.id);
+      el.oncontextmenu = (e) => { e.preventDefault(); A.tabMenu(t.id); };
       el.querySelector('.x').onclick = () => A.closeTab(t.id);
       el.querySelector('.audio')?.addEventListener('click', () => A.mute(t.id));
       el.ondragstart = (e) => {

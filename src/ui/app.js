@@ -254,12 +254,43 @@ function renderSuggest() {
     };
 }
 
+// ---------- split view: the divider in the gap between the two pages, and a ring around the focused one ----------
+function splitPanes() {
+  const r = $('#stage').getBoundingClientRect(), gap = S.splitGap || 14;
+  const lw = Math.round((r.width - gap) * S.split.ratio);
+  return { r, gap, left: { x: r.left, w: lw }, right: { x: r.left + lw + gap, w: r.width - lw - gap } };
+}
+function renderSplit() {
+  const on = !!S.split && !S.fullscreen;
+  document.body.classList.toggle('split', on);
+  $('#split-bar').hidden = $('#split-ring').hidden = !on;
+  if (!on) return;
+  const p = splitPanes(), side = S.active === S.split.right ? p.right : p.left;
+  Object.assign($('#split-bar').style, { left: `${p.left.x + p.left.w}px`, top: `${p.r.top}px`, width: `${p.gap}px`, height: `${p.r.height}px` });
+  Object.assign($('#split-ring').style, { left: `${side.x - 2}px`, top: `${p.r.top - 2}px`, width: `${side.w + 4}px`, height: `${p.r.height + 4}px` });
+}
+addEventListener('resize', () => S.split && renderSplit());
+$('#split-bar').innerHTML = `<button data-s="wider" title="Make the left side bigger">›</button><button data-s="swap" title="Swap sides">⇄</button><button data-s="close" title="Close split view (Ctrl+Shift+S)">✕</button><button data-s="narrower" title="Make the right side bigger">‹</button>`;
+$('#split-bar').onclick = (e) => {
+  const a = e.target.closest('button')?.dataset.s;
+  if (a === 'close') A.unsplit();
+  else if (a === 'swap') A.splitSwap();
+  else if (a === 'wider' || a === 'narrower') A.splitRatio(Math.round(((S.split?.ratio ?? 0.5) + (a === 'wider' ? 0.1 : -0.1)) * 10) / 10);
+};
+$('#split-bar').ondblclick = (e) => !e.target.closest('button') && A.splitRatio(0.5);
+
 let shotOn = false;
 function showShot(dataUrl) {
   shotOn = !!dataUrl;
   const stage = $('#stage');
   stage.classList.toggle('shot', shotOn);
   stage.style.backgroundImage = dataUrl ? `url(${dataUrl})` : '';
+  // in split view the snapshot is only the focused side, so it goes back over that side
+  if (dataUrl && S.split && !S.fullscreen) {
+    const p = splitPanes(), side = S.active === S.split.right ? p.right : p.left;
+    stage.style.backgroundSize = `${side.w}px 100%`;
+    stage.style.backgroundPosition = `${side.x - p.r.left}px 0`;
+  } else stage.style.backgroundSize = stage.style.backgroundPosition = '';
   if (shotOn) {
     stage.replaceChildren();
     stageKey = 'shot';
@@ -779,6 +810,7 @@ A.onState((s) => {
   const switched = s.active !== S.active;
   S = s;
   document.body.classList.toggle('fullscreen', s.fullscreen);
+  renderSplit();
   renderTabs();
   renderToolbar();
   if (switched && !$('#findbar').hidden) closeFind();

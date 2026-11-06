@@ -97,6 +97,13 @@ body:not([data-bg='theme']) #wall::after { display: none; }
 }
 body.panel #stage { right: calc(340px + var(--gap) * 2); }
 #stage.shot { background-size: 100% 100%; background-repeat: no-repeat; }
+/* split view: the pages sit on top; this divider fills the gap between them and the ring shows which side has focus */
+#split-ring { position: fixed; z-index: 2; pointer-events: none; border-radius: 15px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 80%, transparent), 0 0 18px color-mix(in srgb, var(--accent) 35%, transparent); transition: left .18s ease, width .18s ease; }
+#split-bar { position: fixed; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: default; }
+#split-bar::before { content: ''; position: absolute; top: 12px; bottom: 12px; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: rgb(255 255 255 / .12); }
+#split-bar button { position: relative; width: 14px; height: 22px; padding: 0; border: 0; border-radius: 7px; background: var(--island); color: var(--dim); font-size: 11px; line-height: 22px; box-shadow: inset 0 0 0 1px var(--island-edge); cursor: pointer; }
+#split-bar button:hover { color: var(--text); background: var(--fill-2); }
+@media (prefers-reduced-motion: reduce) { #split-ring { transition: none; } }
 body.fullscreen #top, body.fullscreen #dockbar { display: none; }
 body.fullscreen #stage { inset: 0; border-radius: 0; box-shadow: none; }
 
