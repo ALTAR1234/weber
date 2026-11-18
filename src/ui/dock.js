@@ -33,39 +33,69 @@ document.addEventListener('error', (e) => {
   img.replaceWith(fb);
 }, true);
 
-let S = { tabs: [], active: null };
+let S = { tabs: [], active: null, groups: [] };
+function tabEl(t, i) {
+  const el = document.createElement('div');
+  const g = t.group ? S.groups.find((x) => x.id === t.group) : null;
+  el.className = 'tab' + (t.id === S.active ? ' on' : '') + (S.split && (t.id === S.split.left || t.id === S.split.right) ? ' split' : '') + (g ? ' grouped' : '');
+  if (g) el.style.setProperty('--g', g.color);
+  el.title = (t.url ? `${t.title}
+${host(t.url)}` : 'New tab') + (g ? `
+Group: ${g.name || 'unnamed'}` : '');
+  el.draggable = true;
+  const letter = esc((host(t.url)[0] || '').toUpperCase());
+  const fav = t.loading ? '<span class="spin"></span>' : t.favicon ? `<img src="${esc(t.favicon)}" alt="" data-fb="${letter}">` : icon(t.url ? 'globe' : 'spark', 20);
+  el.innerHTML = `<span class="fav">${fav}</span>${t.audible || t.muted ? `<button class="audio" title="${t.muted ? 'Unmute' : 'Mute'} tab">${t.muted ? icon('mute', 11) : '<span class="wave"><i></i><i></i><i></i><i></i></span>'}</button>` : ''}<button class="x" title="Close (Ctrl+W)">${icon('x', 11)}</button>`;
+  el.onmousedown = (e) => {
+    if (e.button === 1) e.preventDefault();
+    else if (e.button === 0 && !e.target.closest('button')) A.activate(t.id);
+  };
+  el.onauxclick = (e) => e.button === 1 && A.closeTab(t.id);
+  el.oncontextmenu = (e) => { e.preventDefault(); A.tabMenu(t.id); };
+  el.querySelector('.x').onclick = () => A.closeTab(t.id);
+  el.querySelector('.audio')?.addEventListener('click', () => A.mute(t.id));
+  el.ondragstart = (e) => {
+    e.dataTransfer.setData('text/tab', String(t.id));
+    el.classList.add('dragging');
+  };
+  el.ondragend = () => el.classList.remove('dragging');
+  el.ondragover = (e) => e.preventDefault();
+  el.ondrop = (e) => {
+    const id = Number(e.dataTransfer.getData('text/tab'));
+    if (id && id !== t.id) A.moveTab(id, i);
+  };
+  return el;
+}
+// a tab group is a tinted capsule around its tabs, with its name as a label; collapsed, it shrinks to the label
+function groupEl(g, members) {
+  const el = document.createElement('div');
+  el.className = 'grp' + (g.collapsed ? ' closed' : '');
+  el.style.setProperty('--g', g.color);
+  const label = document.createElement('button');
+  label.className = 'glabel';
+  label.title = `${g.name || 'Tab group'} · ${members.length} tab${members.length === 1 ? '' : 's'}
+Click to ${g.collapsed ? 'expand' : 'collapse'}, right-click for options`;
+  label.innerHTML = `<i></i>${g.name ? `<span>${esc(g.name)}</span>` : ''}${g.collapsed ? `<b>${members.length}</b>` : ''}`;
+  label.onclick = () => A.groupUpdate(g.id, { collapsed: !g.collapsed });
+  label.oncontextmenu = (e) => { e.preventDefault(); A.groupMenu(g.id); };
+  el.append(label);
+  if (!g.collapsed) for (const [t, i] of members) el.append(tabEl(t, i));
+  return el;
+}
 function render() {
+  document.body.classList.toggle('private', !!S.private);
   const box = $('#tabs');
-  box.replaceChildren(
-    ...S.tabs.map((t, i) => {
-      const el = document.createElement('div');
-      el.className = 'tab' + (t.id === S.active ? ' on' : '') + (S.split && (t.id === S.split.left || t.id === S.split.right) ? ' split' : '');
-      el.title = t.url ? `${t.title}\n${host(t.url)}` : 'New tab';
-      el.draggable = true;
-      const letter = esc((host(t.url)[0] || '').toUpperCase());
-      const fav = t.loading ? '<span class="spin"></span>' : t.favicon ? `<img src="${esc(t.favicon)}" alt="" data-fb="${letter}">` : icon(t.url ? 'globe' : 'spark', 20);
-      el.innerHTML = `<span class="fav">${fav}</span>${t.audible || t.muted ? `<button class="audio" title="${t.muted ? 'Unmute' : 'Mute'} tab">${t.muted ? icon('mute', 11) : '<span class="wave"><i></i><i></i><i></i><i></i></span>'}</button>` : ''}<button class="x" title="Close (Ctrl+W)">${icon('x', 11)}</button>`;
-      el.onmousedown = (e) => {
-        if (e.button === 1) e.preventDefault();
-        else if (e.button === 0 && !e.target.closest('button')) A.activate(t.id);
-      };
-      el.onauxclick = (e) => e.button === 1 && A.closeTab(t.id);
-      el.oncontextmenu = (e) => { e.preventDefault(); A.tabMenu(t.id); };
-      el.querySelector('.x').onclick = () => A.closeTab(t.id);
-      el.querySelector('.audio')?.addEventListener('click', () => A.mute(t.id));
-      el.ondragstart = (e) => {
-        e.dataTransfer.setData('text/tab', String(t.id));
-        el.classList.add('dragging');
-      };
-      el.ondragend = () => el.classList.remove('dragging');
-      el.ondragover = (e) => e.preventDefault();
-      el.ondrop = (e) => {
-        const id = Number(e.dataTransfer.getData('text/tab'));
-        if (id && id !== t.id) A.moveTab(id, i);
-      };
-      return el;
-    }),
-  );
+  const out = [];
+  for (let i = 0; i < S.tabs.length; i++) {
+    const t = S.tabs[i];
+    const g = t.group ? S.groups.find((x) => x.id === t.group) : null;
+    if (!g) { out.push(tabEl(t, i)); continue; }
+    const members = [];
+    while (i < S.tabs.length && S.tabs[i].group === g.id) members.push([S.tabs[i], i++]);
+    i--;
+    out.push(groupEl(g, members));
+  }
+  box.replaceChildren(...out);
   box.querySelector('.tab.on')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
@@ -92,7 +122,7 @@ function sizeUp() {
   if (want !== sent) A.dockSize({ width: (sent = want), height: 84 });
 }
 new ResizeObserver(sizeUp).observe($('#dock'));
-new MutationObserver(sizeUp).observe($('#tabs'), { childList: true });
+new MutationObserver(sizeUp).observe($('#tabs'), { childList: true, subtree: true });
 
 S = await A.state();
 render();

@@ -6,18 +6,31 @@
     content="default-src 'self'; img-src 'self' https: http: data: crx:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>Weber</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="weber.css" />
 </head>
 <body data-theme="aurora">
   <div id="wall" aria-hidden="true"></div>
 
   <header id="top">
     <div class="nav">
+      <button id="profile-chip" class="chip" title="Profile"></button>
       <button id="back" class="icon" title="Back (Alt+Left)"></button>
       <button id="forward" class="icon" title="Forward (Alt+Right)"></button>
       <button id="reload" class="icon" title="Reload (Ctrl+R)"></button>
     </div>
     <div id="center">
-      <button id="pill" title="Search or enter address (Ctrl+L)"><span id="site-icon"></span><span id="url-text"></span></button>
+      <div id="pill-wrap">
+        <button id="site-icon" title="Site information"></button>
+        <button id="pill" title="Search or enter address (Ctrl+L)"><span id="secure-tag" hidden>Not secure</span><span id="url-text"></span></button>
+        <div class="pill-tools">
+          <button id="reader-btn" class="icon small" title="Reading mode (F9)" hidden></button>
+          <button id="translate-btn" class="icon small" title="Translate page" hidden></button>
+          <button id="pip-btn" class="icon small" title="Picture in picture" hidden></button>
+          <button id="popup-btn" class="icon small warn" title="Pop-ups blocked" hidden></button>
+          <span id="zoom-pill" hidden></span>
+          <button id="star" class="icon small" title="Add to favorites (Ctrl+D)"></button>
+        </div>
+      </div>
       <div id="findbar" hidden>
         <input id="find-input" spellcheck="false" placeholder="Find in page" />
         <span id="find-count"></span>
@@ -29,11 +42,16 @@
     </div>
     <div class="tools">
       <browser-action-list id="ext-actions" partition="persist:weber" alignment="bottom left"></browser-action-list>
-      <span id="zoom-pill" hidden></span>
-      <button id="star" class="icon" title="Add to favorites (Ctrl+D)"></button>
-      <button id="shield" class="icon" title="Ads and trackers blocked"><b id="blocked"></b></button>
+      <button id="shield" class="icon" title="Weber Shield"><b id="blocked"></b></button>
+      <button id="dl-top" class="icon" title="Downloads (Ctrl+J)"><i id="dl-top-dot" hidden></i></button>
+      <button id="menu-btn" class="icon" title="Menu"></button>
     </div>
   </header>
+
+  <nav id="bmbar" hidden></nav>
+  <aside id="rail" hidden></aside>
+  <aside id="vtabs" hidden></aside>
+  <section id="side" hidden><header class="side-head"></header><div class="side-body"></div></section>
 
   <main id="stage"></main>
   <div id="split-ring" hidden></div>
@@ -58,6 +76,7 @@
       <div id="suggest"></div>
     </div>
   </div>
+  <div id="overlay" hidden></div>
   <div id="toast" hidden></div>
 
   <script type="module" src="app.js"></script>
