@@ -580,6 +580,8 @@ async function setupSession() {
   });
   ElectronChromeExtensions.handleCRXProtocol(session.defaultSession); // extension icons in Weber's toolbar
   await installChromeWebStore({ session: ses, beforeInstall: askToInstall }).catch((e) => console.error('Chrome Web Store setup failed:', e));
+    // Velvet: Weber's own look for YouTube (a built-in extension; private windows run without extensions)
+    await (ses.extensions || ses).loadExtension(path.join(__dirname, 'extensions', 'velvet')).catch((e) => console.error('Velvet did not load:', e.message));
 
   ses.webRequest.onBeforeRequest({ urls: ['http://*/*', 'https://*/*'] }, (d, cb) => {
     if (!store.settings.adblock || d.resourceType === 'mainFrame') return cb({});

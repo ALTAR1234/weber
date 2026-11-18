@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Velvet for YouTube",
+  "version": "1.0.0",
+  "description": "A calmer, more premium YouTube: a cinematic backdrop from the video you're watching, glass panels, rounded art that lifts when you point at it, and no Shorts shelves or clutter.",
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "https://m.youtube.com/*"],
+      "css": ["velvet.css", "velvet-ui.css"],
+      "js": ["velvet.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "icons": { "128": "icon.png" }
+}

@@ -1,0 +1,151 @@
+/* Velvet for YouTube: a calmer, more premium YouTube.
+   - a deep, warm-black stage; on a video page, the video's own art glows softly behind everything
+   - a frosted glass top bar, glass panels for the description, chips and menus
+   - bigger rounded art that lifts and brightens when you point at it
+   - bolder, tighter titles; quieter metadata
+   - Shorts shelves, promoted cards and clutter are hidden
+   Layout and motion apply in both themes; the colours only in YouTube's dark theme. */
+
+html.velvet {
+  --vv-font: 'Segoe UI Variable Text', 'Segoe UI', 'SF Pro Text', Roboto, system-ui, sans-serif;
+  --vv-display: 'Segoe UI Variable Display', 'Segoe UI', 'SF Pro Display', Roboto, system-ui, sans-serif;
+  --vv-r: 16px;
+  --vv-ease: cubic-bezier(.2, .8, .2, 1);
+  --vv-spring: cubic-bezier(.34, 1.4, .64, 1);
+}
+html.velvet[dark] {
+  --vv-bg: #0a0a0d;
+  --vv-text: #f5f5f7;
+  --vv-dim: rgb(235 235 245 / .62);
+  --vv-glass: linear-gradient(180deg, rgb(255 255 255 / .09), rgb(255 255 255 / .035));
+  --vv-edge: inset 0 1px 0 rgb(255 255 255 / .14), inset 0 0 0 1px rgb(255 255 255 / .07);
+  --vv-acc: #ff3b5c;
+  --vv-acc-2: #ff7a45;
+  /* YouTube's own colour tokens */
+  --yt-spec-base-background: var(--vv-bg) !important;
+  --yt-spec-raised-background: #141418 !important;
+  --yt-spec-menu-background: rgb(30 30 36 / .92) !important;
+  --yt-spec-general-background-a: var(--vv-bg) !important;
+  --yt-spec-general-background-b: var(--vv-bg) !important;
+  --yt-spec-text-primary: var(--vv-text) !important;
+  --yt-spec-text-secondary: var(--vv-dim) !important;
+  --yt-spec-badge-chip-background: rgb(255 255 255 / .08) !important;
+  --yt-spec-10-percent-layer: rgb(255 255 255 / .08) !important;
+  --yt-spec-static-brand-red: var(--vv-acc) !important;
+  background: var(--vv-bg) !important;
+}
+
+/* ---------- type ---------- */
+html.velvet, html.velvet body, html.velvet ytd-app, html.velvet yt-formatted-string, html.velvet .yt-core-attributed-string { font-family: var(--vv-font) !important; -webkit-font-smoothing: antialiased; }
+html.velvet #video-title, html.velvet .yt-lockup-metadata-view-model__title, html.velvet .yt-lockup-metadata-view-model-wiz__title, html.velvet h3.yt-lockup-metadata-view-model__heading-reset {
+  font-family: var(--vv-display) !important; font-weight: 650 !important; letter-spacing: -.01em; line-height: 1.32 !important; }
+html.velvet ytd-watch-metadata h1, html.velvet ytd-watch-metadata #title h1 yt-formatted-string {
+  font: 700 22px/1.25 var(--vv-display) !important; letter-spacing: -.02em !important; }
+html.velvet ytd-rich-shelf-renderer #title, html.velvet ytd-shelf-renderer #title, html.velvet ytd-item-section-header-renderer #title { font: 700 20px var(--vv-display) !important; letter-spacing: -.015em; }
+
+/* ---------- the stage ---------- */
+html.velvet[dark] body, html.velvet[dark] ytd-app, html.velvet[dark] #page-manager, html.velvet[dark] ytd-browse, html.velvet[dark] ytd-two-column-browse-results-renderer,
+html.velvet[dark] ytd-watch-flexy, html.velvet[dark] ytd-search, html.velvet[dark] #columns, html.velvet[dark] ytd-rich-grid-renderer { background: transparent !important; }
+html.velvet[dark] body { background: var(--vv-bg) !important; }
+#velvet-bg { display: none; }
+html.velvet[dark] #velvet-bg { display: block; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(70% 55% at 85% -10%, rgb(255 59 92 / .13), transparent 70%), radial-gradient(60% 50% at -10% 10%, rgb(110 80 255 / .12), transparent 70%), var(--vv-bg); }
+/* on a video page, the video's art glows behind everything, far out of focus */
+html.velvet[dark].velvet-watch #velvet-bg { background: var(--vv-bg); }
+html.velvet[dark].velvet-watch #velvet-bg::before { content: ''; position: absolute; inset: -12%; background: var(--velvet-art) center / cover no-repeat;
+  filter: blur(90px) saturate(1.5) brightness(.55); opacity: .75; transform: scale(1.1); transition: background-image .6s; }
+html.velvet[dark].velvet-watch #velvet-bg::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgb(10 10 13 / .15) 0%, rgb(10 10 13 / .7) 55%, var(--vv-bg) 100%); }
+/* YouTube's own ambient glow would double up with ours */
+html.velvet[dark] #cinematics, html.velvet[dark] #cinematics-container { opacity: .55; }
+
+/* ---------- top bar: frosted glass ---------- */
+html.velvet[dark] #masthead-container, html.velvet[dark] ytd-masthead, html.velvet[dark] #masthead, html.velvet[dark] #background.ytd-masthead { background: transparent !important; }
+html.velvet[dark] #masthead-container { background: rgb(10 10 13 / .55) !important; backdrop-filter: blur(28px) saturate(170%); box-shadow: inset 0 -1px 0 rgb(255 255 255 / .06); }
+html.velvet[dark] #frosted-glass { background: rgb(10 10 13 / .55) !important; backdrop-filter: blur(28px) saturate(170%) !important; }
+html.velvet ytd-searchbox #container.ytd-searchbox, html.velvet .ytSearchboxComponentInputBox { border-radius: 999px 0 0 999px !important; }
+html.velvet[dark] ytd-searchbox #container.ytd-searchbox, html.velvet[dark] .ytSearchboxComponentInputBox { background: rgb(255 255 255 / .06) !important; border-color: rgb(255 255 255 / .1) !important; }
+html.velvet[dark] #search-icon-legacy, html.velvet[dark] .ytSearchboxComponentSearchButton { background: rgb(255 255 255 / .1) !important; border-color: rgb(255 255 255 / .1) !important; border-radius: 0 999px 999px 0 !important; }
+
+/* ---------- side guide ---------- */
+html.velvet[dark] tp-yt-app-drawer #contentContainer, html.velvet[dark] ytd-guide-renderer, html.velvet[dark] ytd-mini-guide-renderer, html.velvet[dark] #guide-content { background: transparent !important; }
+html.velvet[dark] tp-yt-app-drawer[opened] #contentContainer, html.velvet[dark] tp-yt-app-drawer[persistent] #contentContainer { background: rgb(12 12 16 / .55) !important; backdrop-filter: blur(24px); }
+html.velvet ytd-guide-entry-renderer tp-yt-paper-item, html.velvet ytd-mini-guide-entry-renderer { border-radius: 12px !important; }
+html.velvet[dark] ytd-guide-entry-renderer[active] tp-yt-paper-item { background: rgb(255 255 255 / .1) !important; box-shadow: var(--vv-edge); }
+
+/* ---------- chips: glass pills ---------- */
+html.velvet[dark] #chips-wrapper, html.velvet[dark] ytd-feed-filter-chip-bar-renderer { background: transparent !important; }
+html.velvet[dark] ytd-feed-filter-chip-bar-renderer #chips-wrapper { background: rgb(10 10 13 / .5) !important; backdrop-filter: blur(24px) saturate(160%); }
+html.velvet[dark] #left-arrow-button, html.velvet[dark] #right-arrow-button, html.velvet[dark] #left-arrow::after, html.velvet[dark] #right-arrow::before { background: transparent !important; }
+html.velvet yt-chip-cloud-chip-renderer, html.velvet chip-shape button { border-radius: 999px !important; transition: background .2s, transform .2s var(--vv-ease) !important; }
+html.velvet[dark] yt-chip-cloud-chip-renderer:not([selected]), html.velvet[dark] chip-shape button:not([aria-selected="true"]) { background: var(--vv-glass) !important; box-shadow: var(--vv-edge); }
+html.velvet yt-chip-cloud-chip-renderer:hover, html.velvet chip-shape button:hover { transform: translateY(-1px); }
+
+/* ---------- art: bigger corners, a lift and a glow when you point ---------- */
+html.velvet ytd-rich-grid-renderer { --ytd-rich-grid-item-margin: 22px !important; --ytd-rich-grid-row-margin: 34px !important; }
+html.velvet ytd-thumbnail, html.velvet yt-thumbnail-view-model, html.velvet .yt-thumbnail-view-model, html.velvet ytd-playlist-thumbnail, html.velvet a.yt-lockup-view-model__content-image, html.velvet a.yt-lockup-view-model-wiz__content-image {
+  border-radius: var(--vv-r) !important; overflow: hidden; transition: transform .45s var(--vv-spring), box-shadow .35s var(--vv-ease), filter .3s !important; }
+html.velvet ytd-thumbnail #thumbnail, html.velvet yt-image img, html.velvet ytd-thumbnail img { border-radius: var(--vv-r) !important; }
+html.velvet ytd-rich-item-renderer:hover ytd-thumbnail, html.velvet ytd-rich-item-renderer:hover yt-thumbnail-view-model, html.velvet ytd-rich-item-renderer:hover a.yt-lockup-view-model__content-image,
+html.velvet ytd-video-renderer:hover ytd-thumbnail, html.velvet ytd-compact-video-renderer:hover ytd-thumbnail, html.velvet yt-lockup-view-model:hover yt-thumbnail-view-model, html.velvet yt-lockup-view-model:hover a.yt-lockup-view-model__content-image {
+  transform: translateY(-4px) scale(1.018); box-shadow: 0 18px 40px rgb(0 0 0 / .45), 0 0 0 1px rgb(255 255 255 / .1); filter: brightness(1.06) saturate(1.08); }
+/* time badges: small dark glass */
+html.velvet ytd-thumbnail-overlay-time-status-renderer, html.velvet .yt-badge-shape--thumbnail-default, html.velvet .badge-shape-wiz--thumbnail-default {
+  border-radius: 8px !important; background: rgb(0 0 0 / .6) !important; backdrop-filter: blur(8px); font-weight: 650 !important; }
+/* the watched bar: a warm gradient */
+html.velvet #progress.ytd-thumbnail-overlay-resume-playback-renderer, html.velvet .ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment { background: linear-gradient(90deg, var(--vv-acc, #ff3b5c), var(--vv-acc-2, #ff7a45)) !important; }
+/* channel pictures get a thin ring */
+html.velvet[dark] #avatar-link yt-img-shadow, html.velvet[dark] .yt-spec-avatar-shape, html.velvet[dark] yt-avatar-shape .yt-spec-avatar-shape__image { box-shadow: 0 0 0 1.5px rgb(255 255 255 / .14); border-radius: 50%; }
+html.velvet[dark] #metadata-line, html.velvet[dark] .yt-content-metadata-view-model__metadata-text, html.velvet[dark] .yt-content-metadata-view-model-wiz__metadata-text { color: var(--vv-dim) !important; }
+
+/* ---------- the video page ---------- */
+html.velvet #movie_player, html.velvet ytd-watch-flexy:not([theater]):not([fullscreen]) #player-container-outer, html.velvet ytd-watch-flexy:not([theater]):not([fullscreen]) #player-container-inner,
+html.velvet ytd-watch-flexy:not([theater]):not([fullscreen]) #ytd-player, html.velvet ytd-watch-flexy:not([theater]):not([fullscreen]) .html5-video-container video { border-radius: 20px !important; }
+html.velvet[dark] ytd-watch-flexy:not([theater]):not([fullscreen]) #ytd-player { box-shadow: 0 30px 80px rgb(0 0 0 / .6), 0 0 0 1px rgb(255 255 255 / .06); overflow: hidden; }
+html.velvet ytd-watch-flexy[fullscreen] #movie_player, html.velvet ytd-watch-flexy[theater] #movie_player { border-radius: 0 !important; }
+/* the player's progress bar and controls */
+html.velvet .ytp-play-progress, html.velvet .ytp-swatch-background-color { background: linear-gradient(90deg, #ff3b5c, #ff7a45) !important; }
+html.velvet .ytp-scrubber-button { background: #fff !important; box-shadow: 0 0 0 4px rgb(255 59 92 / .35); }
+html.velvet .ytp-progress-bar-container:hover .ytp-progress-list { transform: scaleY(1.4); }
+html.velvet .ytp-chrome-bottom { transition: opacity .3s var(--vv-ease) !important; }
+html.velvet .ytp-gradient-bottom { background: linear-gradient(0deg, rgb(0 0 0 / .72), transparent) !important; height: 140px !important; padding-top: 0 !important; background-image: none; }
+html.velvet .ytp-popup, html.velvet .ytp-settings-menu { border-radius: 16px !important; background: rgb(24 24 30 / .82) !important; backdrop-filter: blur(24px) saturate(160%); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .1), 0 20px 50px rgb(0 0 0 / .5); }
+/* title, owner and buttons */
+html.velvet ytd-watch-metadata { margin-top: 18px !important; }
+html.velvet[dark] ytd-watch-metadata #owner { gap: 4px; }
+html.velvet button.yt-spec-button-shape-next { border-radius: 999px !important; transition: background .2s, transform .2s var(--vv-ease) !important; }
+html.velvet button.yt-spec-button-shape-next:active { transform: scale(.96); }
+html.velvet[dark] ytd-watch-metadata button.yt-spec-button-shape-next--tonal, html.velvet[dark] ytd-watch-metadata .yt-spec-button-shape-next--tonal,
+html.velvet[dark] ytd-watch-metadata segmented-like-dislike-button-view-model button, html.velvet[dark] ytd-watch-metadata like-button-view-model button, html.velvet[dark] ytd-watch-metadata dislike-button-view-model button {
+  background: var(--vv-glass) !important; box-shadow: var(--vv-edge); backdrop-filter: blur(16px); }
+html.velvet[dark] ytd-watch-metadata button.yt-spec-button-shape-next--tonal:hover { background: rgb(255 255 255 / .14) !important; }
+/* Subscribe: a warm gradient pill */
+html.velvet[dark] #subscribe-button button.yt-spec-button-shape-next--filled, html.velvet[dark] yt-subscribe-button-view-model button.yt-spec-button-shape-next--filled {
+  background: linear-gradient(135deg, #ff3b5c, #ff7a45) !important; color: #fff !important; box-shadow: 0 6px 20px rgb(255 59 92 / .35); }
+/* description and comment box: glass cards */
+html.velvet[dark] ytd-watch-metadata #description, html.velvet[dark] #description.ytd-watch-metadata, html.velvet[dark] ytd-text-inline-expander {
+  background: var(--vv-glass) !important; box-shadow: var(--vv-edge); backdrop-filter: blur(20px) saturate(150%); border-radius: 18px !important; }
+html.velvet[dark] ytd-watch-metadata #description:hover { background: rgb(255 255 255 / .1) !important; }
+html.velvet ytd-comments#comments { margin-top: 10px; }
+html.velvet[dark] ytd-comment-simplebox-renderer #placeholder-area { border-radius: 14px; padding: 10px 14px; background: rgb(255 255 255 / .05); border: 0 !important; }
+html.velvet ytd-comment-thread-renderer { padding: 6px 0 !important; }
+/* up next: roomier list */
+html.velvet ytd-watch-next-secondary-results-renderer ytd-compact-video-renderer, html.velvet #secondary yt-lockup-view-model { margin-bottom: 12px !important; }
+
+/* ---------- menus and pop-ups: glass ---------- */
+html.velvet[dark] tp-yt-iron-dropdown ytd-menu-popup-renderer, html.velvet[dark] ytd-multi-page-menu-renderer, html.velvet[dark] .ytSearchboxComponentSuggestionsContainer, html.velvet[dark] yt-sheet-view-model, html.velvet[dark] .yt-contextual-sheet-layout-wiz, html.velvet[dark] .ytContextualSheetLayoutHost {
+  background: rgb(26 26 32 / .86) !important; backdrop-filter: blur(30px) saturate(170%); border-radius: 18px !important; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .1), 0 24px 60px rgb(0 0 0 / .55) !important; border: 0 !important; }
+
+/* ---------- less clutter ---------- */
+html.velvet ytd-rich-shelf-renderer[is-shorts], html.velvet ytd-reel-shelf-renderer, html.velvet ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]),
+html.velvet ytd-rich-section-renderer:has(ytm-shorts-lockup-view-model), html.velvet grid-shelf-view-model:has(ytm-shorts-lockup-view-model), html.velvet ytd-item-section-renderer:has(> #contents > ytd-reel-shelf-renderer),
+html.velvet ytd-ad-slot-renderer, html.velvet ytd-rich-item-renderer:has(ytd-ad-slot-renderer), html.velvet ytd-in-feed-ad-layout-renderer, html.velvet ytd-promoted-sparkles-web-renderer, html.velvet ytd-banner-promo-renderer, html.velvet #masthead-ad,
+html.velvet ytd-statement-banner-renderer, html.velvet ytd-merch-shelf-renderer, html.velvet ytd-brand-video-singleton-renderer, html.velvet ytd-brand-video-shelf-renderer,
+html.velvet ytd-rich-section-renderer:has(ytd-statement-banner-renderer), html.velvet #player-ads, html.velvet ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"] { display: none !important; }
+
+/* scrollbars: thin and quiet */
+html.velvet { scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / .18) transparent; }
+html.velvet ::-webkit-scrollbar { width: 10px; height: 10px; }
+html.velvet ::-webkit-scrollbar-thumb { background: rgb(255 255 255 / .16); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+html.velvet ::-webkit-scrollbar-track { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) { html.velvet * { transition: none !important; } }
